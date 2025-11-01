@@ -1,0 +1,32 @@
+soil_properties:
+  zone_1:
+    name: "North Field"
+    clay: 28.0
+    silt: 42.0
+    sand: 30.0
+    organic_matter: 2.5
+    bulk_density: 1.35
+    soil_type: "HeS"
+    depth_layers: [0, 30, 60, 90]  # cm
+    
+  zone_2:
+    name: "South Field"
+    clay: 32.0
+    silt: 38.0
+    sand: 30.0
+    organic_matter: 3.0
+    bulk_density: 1.30
+    soil_type: "He"
+    depth_layers: [0, 30, 60, 90]
+
+irrigation:
+  threshold_paw_percentage: 50
+  application_rate_mm: 25
+  min_interval_hours: 24
+  max_daily_mm: 50
+  
+alerts:
+  critical_moisture_pct: 20
+  warning_moisture_pct: 30
+  email_enabled: false
+  email_recipients: []
