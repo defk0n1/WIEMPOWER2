@@ -1,0 +1,28 @@
+mqtt:
+  broker: "mosquitto"  # Docker service name
+  port: 1883
+  username: null
+  password: null
+  keepalive: 60
+  client_id: "irrigation_monitor"
+  
+topics:
+  soil_moisture: "sensors/soil/moisture"
+  soil_temperature: "sensors/soil/temperature"
+  air_temperature: "sensors/air/temperature"
+  air_humidity: "sensors/air/humidity"
+  rainfall: "sensors/weather/rainfall"
+  irrigation_command: "actuators/irrigation/command"
+  
+sensor_zones:
+  - zone_id: "zone_1"
+    name: "North Field"
+    depth_cm: 30
+    lat: 60.1699
+    lon: 24.9384
+    
+  - zone_id: "zone_2"
+    name: "South Field"
+    depth_cm: 30
+    lat: 60.1700
+    lon: 24.9390
