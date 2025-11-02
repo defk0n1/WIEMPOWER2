@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # API Keys
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_NAME = "meta-llama/llama-3.1-8b-instruct"
 

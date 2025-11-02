@@ -83,7 +83,7 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - ./app:/app/app
+      - ./streamlit-app:/app/app
       - ./src:/app/src
       - ./config:/app/config
     depends_on:
@@ -92,7 +92,7 @@ services:
     networks:
       - irrigation-network
     restart: unless-stopped
-    command: streamlit run app/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    command: streamlit run streamlit-app/dashboard.py --server.port=8501 --server.address=0.0.0.0
 
   ml-service:
     build:
@@ -121,7 +121,7 @@ services:
   scheduler-api-service:
     build:
       context: ./scheduler
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
     container_name: irrigation-api
     ports:
       - "5002:5002"
