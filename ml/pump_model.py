@@ -310,6 +310,8 @@ def predict():
             'zone_id': data.get('zone_id'),
             'received_at': datetime.utcnow().isoformat()
         }
+
+        print(jsonify(prediction))
         
         return jsonify(prediction), 200
         
