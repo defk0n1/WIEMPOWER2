@@ -1,0 +1,52 @@
+
+# NPK Soil Nutrient Configuration
+# Units: mg/kg (ppm - parts per million)
+
+npk_thresholds:
+  nitrogen:
+    critical_low: 20      # mg/kg - Severe deficiency
+    low: 40              # mg/kg - Deficiency
+    optimal_min: 60      # mg/kg - Adequate
+    optimal_max: 120     # mg/kg - Optimal
+    high: 150            # mg/kg - Excess
+    unit: mg/kg
+    
+  phosphorus:
+    critical_low: 10     # mg/kg - Severe deficiency
+    low: 20              # mg/kg - Deficiency
+    optimal_min: 30      # mg/kg - Adequate
+    optimal_max: 60      # mg/kg - Optimal
+    high: 80             # mg/kg - Excess
+    unit: mg/kg
+    
+  potassium:
+    critical_low: 50     # mg/kg - Severe deficiency
+    low: 100             # mg/kg - Deficiency
+    optimal_min: 150     # mg/kg - Adequate
+    optimal_max: 300     # mg/kg - Optimal
+    high: 400            # mg/kg - Excess
+    unit: mg/kg
+
+# Crop-specific NPK requirements
+crop_requirements:
+  wheat:
+    N: {min: 80, max: 120}
+    P: {min: 30, max: 50}
+    K: {min: 150, max: 250}
+    
+  corn:
+    N: {min: 100, max: 150}
+    P: {min: 40, max: 60}
+    K: {min: 180, max: 280}
+    
+  tomato:
+    N: {min: 70, max: 100}
+    P: {min: 50, max: 70}
+    K: {min: 200, max: 300}
+
+# Fertilizer recommendations
+fertilizer_application:
+  N_deficit_rate_kg_per_ha: 50   # kg/ha per 20 mg/kg deficit
+  P_deficit_rate_kg_per_ha: 30
+  K_deficit_rate_kg_per_ha: 40
+  min_interval_days: 14          # Minimum 2 weeks between applications

@@ -1,28 +1,40 @@
 mqtt:
-  broker: "mosquitto"  # Docker service name
+  broker: mosquitto
   port: 1883
-  username: null
-  password: null
-  keepalive: 60
-  client_id: "irrigation_monitor"
-  
+  client_id: irrigation_collector
+
 topics:
-  soil_moisture: "sensors/soil/moisture"
-  soil_temperature: "sensors/soil/temperature"
-  air_temperature: "sensors/air/temperature"
-  air_humidity: "sensors/air/humidity"
-  rainfall: "sensors/weather/rainfall"
-  irrigation_command: "actuators/irrigation/command"
+  # Existing sensors
+  soil_moisture: sensors/soil/moisture
+  soil_temperature: sensors/soil/temperature
+  air_temperature: sensors/air/temperature
+  air_humidity: sensors/air/humidity
+  rainfall: sensors/weather/rainfall
   
+  
+  # NEW: NPK Nutrient sensors
+  soil_nitrogen: sensors/soil/npk/nitrogen
+  soil_phosphorus: sensors/soil/npk/phosphorus
+  soil_potassium: sensors/soil/npk/potassium
+  
+  # NEW: Water level sensor
+  water_level: sensors/water/level
+  
+  # Actuators
+  irrigation_command: actuators/irrigation/command
+
 sensor_zones:
-  - zone_id: "zone_1"
-    name: "North Field"
+  - zone_id: zone_1
+    name: North Field
     depth_cm: 30
-    lat: 60.1699
-    lon: 24.9384
-    
-  - zone_id: "zone_2"
-    name: "South Field"
+    crop_type: wheat  # NEW: for NPK requirements
+  - zone_id: zone_2
+    name: South Field
     depth_cm: 30
-    lat: 60.1700
-    lon: 24.9390
+    crop_type: corn   # NEW: for NPK requirements
+
+# NEW: Water reservoir configuration
+water_reservoir:
+  capacity_liters: 10000
+  min_level_percent: 20
+  refill_rate_liters_per_hour: 500

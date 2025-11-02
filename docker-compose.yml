@@ -1,1 +1,148 @@
-version: '3.8'\n\nservices:\n  # MQTT Broker\n  mosquitto:\n    image: eclipse-mosquitto:2.0\n    container_name: irrigation-mqtt-broker\n    ports:\n      - "1883:1883"\n      - "9001:9001"\n    volumes:\n      - ./mosquitto/config:/mosquitto/config\n      - ./mosquitto/data:/mosquitto/data\n      - ./mosquitto/log:/mosquitto/log\n    networks:\n      - irrigation-network\n    restart: unless-stopped\n\n  # PostgreSQL Database\n  postgres:\n    image: postgres:15-alpine\n    container_name: irrigation-db\n    environment:\n      POSTGRES_USER: ${POSTGRES_USER:-irrigation_user}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-irrigation_pass}\n      POSTGRES_DB: ${POSTGRES_DB:-irrigation_db}\n    ports:\n      - "5432:5432"\n    volumes:\n      - postgres-data:/var/lib/postgresql/data\n    networks:\n      - irrigation-network\n    restart: unless-stopped\n    healthcheck:\n      test: ["CMD-SHELL", "pg_isready -U irrigation_user"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Main Application (MQTT Consumer + Analyzer)\n  app:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    container_name: irrigation-app\n    environment:\n      - MQTT_BROKER=mosquitto\n      - MQTT_PORT=1883\n      - DATABASE_URL=postgresql://irrigation_user:irrigation_pass@postgres:5432/irrigation_db\n      - PYTHONUNBUFFERED=1\n    volumes:\n      - ./config:/app/config\n      - ./data:/app/data\n      - ./src:/app/src\n      - app-data:/app/storage\n    depends_on:\n      postgres:\n        condition: service_healthy\n      mosquitto:\n        condition: service_started\n    networks:\n      - irrigation-network\n    restart: unless-stopped\n    command: python main.py\n\n  # Mock IoT Sensor Simulator\n  sensor-simulator:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    container_name: irrigation-sensors\n    environment:\n      - MQTT_BROKER=mosquitto\n      - MQTT_PORT=1883\n      - SENSOR_INTERVAL=10\n    volumes:\n      - ./data:/app/data\n      - ./config:/app/config\n    depends_on:\n      - mosquitto\n    networks:\n      - irrigation-network\n    restart: unless-stopped\n    command: python data/mock_data_generator.py\n\n  # Streamlit Dashboard\n  dashboard:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    container_name: irrigation-dashboard\n    environment:\n      - DATABASE_URL=postgresql://irrigation_user:irrigation_pass@postgres:5432/irrigation_db\n      - MQTT_BROKER=mosquitto\n      - MQTT_PORT=1883\n    ports:\n      - "8501:8501"\n    volumes:\n      - ./app:/app/app\n      - ./src:/app/src\n      - ./config:/app/config\n    depends_on:\n      - postgres\n      - mosquitto\n    networks:\n      - irrigation-network\n    restart: unless-stopped\n    command: streamlit run app/dashboard.py --server.port=8501 --server.address=0.0.0.0\n\nnets:\n  irrigation-network:\n    driver: bridge\n\nvolumes:\n  postgres-data:\n  app-data:
+version: '3.8'
+
+services:
+  # MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: irrigation-mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - irrigation-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: irrigation-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-irrigation_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-irrigation_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-irrigation_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql  
+
+    networks:
+      - irrigation-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U irrigation_user -d irrigation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Main Application (MQTT Consumer + Analyzer)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: irrigation-app
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - DATABASE_URL=postgresql://irrigation_user:irrigation_pass@postgres:5432/irrigation_db
+      - PYTHONUNBUFFERED=1
+      - IRRIGATION_JOB_INTERVAL_MINUTES=30  # Run every 30 minutes
+      - USE_MOCK_ML_MODEL=true  # Use mock model (set to false for real ML service)
+      - ML_MODEL_URL=http://ml-service:5000/predict  # URL of real ML service
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./src:/app/src
+      - app-data:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    networks:
+      - irrigation-network
+    restart: unless-stopped
+    command: python main.py
+
+
+
+  # Streamlit Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: irrigation-dashboard
+    environment:
+      - DATABASE_URL=postgresql://irrigation_user:irrigation_pass@postgres:5432/irrigation_db
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./app:/app/app
+      - ./src:/app/src
+      - ./config:/app/config
+    depends_on:
+      - postgres
+      - mosquitto
+    networks:
+      - irrigation-network
+    restart: unless-stopped
+    command: streamlit run app/dashboard.py --server.port=8501 --server.address=0.0.0.0
+
+  ml-service:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: ml-model-service
+    ports:
+      - "8000:8000"  # Changed from 5000 to 8000
+    environment:
+      - PORT=8000
+      - DEBUG=false
+      - MODEL_VERSION=v1.0.0-xgboost
+      - MODEL_PATH=xgb_pump_model.pkl
+    volumes:
+      - ./ml/xgb_pump_model.pkl:/app/xgb_pump_model.pkl:ro
+    networks:
+      - irrigation-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Add this service
+  api-service:
+    build:
+      context: ./api_service
+      dockerfile: Dockerfile
+    container_name: irrigation-api
+    ports:
+      - "5002:5002"
+    environment:
+      - DATABASE_URL=postgresql://irrigation_user:irrigation_pass@postgres:5432/irrigation_db
+      - MQTT_BROKER=irrigation-mqtt-broker
+      - MQTT_PORT=1883
+    volumes:
+      - ./api_service:/app
+      - ./src:/app/src
+    networks:
+      - irrigation-network
+    depends_on:
+      - postgres
+      - mosquitto
+    restart: unless-stopped
+
+networks:
+  irrigation-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  app-data:

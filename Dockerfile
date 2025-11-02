@@ -5,21 +5,17 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    git \
     wget \
     gnupg \
     curl \
     gcc \
     g++ \
     postgresql-client \
+    libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install .NET Runtime (required for farmingpy APSIM integration)
-RUN wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-    && dpkg -i packages-microsoft-prod.deb \
-    && rm packages-microsoft-prod.deb \
-    && apt-get update \
-    && apt-get install -y dotnet-runtime-6.0 \
-    && rm -rf /var/lib/apt/lists/*
+
 
 # Copy requirements
 COPY requirements.txt .
